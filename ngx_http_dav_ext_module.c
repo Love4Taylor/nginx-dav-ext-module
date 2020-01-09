@@ -18,6 +18,7 @@
 #define NGX_HTTP_DAV_EXT_NODE_PROP                0x02
 #define NGX_HTTP_DAV_EXT_NODE_PROPNAME            0x04
 #define NGX_HTTP_DAV_EXT_NODE_ALLPROP             0x08
+#define NGX_HTTP_DAV_EXT_NODE_PROPPATCH           0x10
 
 #define NGX_HTTP_DAV_EXT_PROP_DISPLAYNAME         0x01
 #define NGX_HTTP_DAV_EXT_PROP_GETCONTENTLENGTH    0x02
@@ -134,6 +135,7 @@ static ngx_int_t ngx_http_dav_ext_init(ngx_conf_t *cf);
 static ngx_conf_bitmask_t  ngx_http_dav_ext_methods_mask[] = {
     { ngx_string("off"),      NGX_HTTP_DAV_EXT_OFF },
     { ngx_string("propfind"), NGX_HTTP_PROPFIND    },
+    { ngx_string("proppatch"),NGX_HTTP_PROPPATCH   },
     { ngx_string("options"),  NGX_HTTP_OPTIONS     },
     { ngx_string("lock"),     NGX_HTTP_LOCK        },
     { ngx_string("unlock"),   NGX_HTTP_UNLOCK      },
@@ -485,6 +487,19 @@ ngx_http_dav_ext_content_handler(ngx_http_request_t *r)
 
         return NGX_DONE;
 
+    case NGX_HTTP_PROPPATCH:
+
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http dav_ext proppatch");
+
+        rc = ngx_http_read_client_request_body(r,
+                                            ngx_http_dav_ext_propfind_handler);
+        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            return rc;
+        }
+
+        return NGX_DONE;
+
     case NGX_HTTP_OPTIONS:
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -514,7 +529,7 @@ ngx_http_dav_ext_content_handler(ngx_http_request_t *r)
         /* XXX */
         ngx_str_set(&h->key, "Allow");
         ngx_str_set(&h->value,
-           "GET,HEAD,PUT,DELETE,MKCOL,COPY,MOVE,PROPFIND,OPTIONS,LOCK,UNLOCK");
+           "GET,HEAD,PUT,DELETE,MKCOL,COPY,MOVE,PROPFIND,OPTIONS,LOCK,UNLOCK,PROPPATCH");
         h->hash = 1;
 
         r->headers_out.status = NGX_HTTP_OK;
